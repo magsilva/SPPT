@@ -1,123 +1,188 @@
 <html>
-<head>
-    <title>Upload de Arquivos com PHP</title>
-</head>
-<body>
- 
-<form method="post" action="index.php" enctype="multipart/form-data">
-<label>RA Aluno [somente números]:</label>
-<input type="text" name="ra" value="<?php if (isset($_POST['ra'])) {echo $_POST['ra']; } ?>"/> <p />
-<label>Arquivo:</label>
-<input type="file" name="arquivo" />
-<input type="submit" name="submit" value="Enviar" />
-</form>
 
-<meta charset="Windows-1252" />
+<head>
+	<title>SPPT (Small Python Program Tester)</title>
+	<meta charset="UTF-8">
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+
+<body>
 
 <?php
-if (isset($_POST['submit'])) {
-	// Pasta onde o arquivo vai ser salvo
-	$_UP['pasta'] = 'uploads/';
-	 
-	// Tamanho máximo do arquivo (em Bytes)
-	$_UP['tamanho'] = 1024 * 1024 * 2; // 2Mb
-	 
-	// Array com as extensões permitidas
-	$_UP['extensoes'] = array('py');
-	 
-	// Array com os tipos de erros de upload do PHP
-	$_UP['erros'][0] = 'Não houve erro';
-	$_UP['erros'][1] = 'O arquivo no upload é maior do que o limite do PHP';
-	$_UP['erros'][2] = 'O arquivo ultrapassa o limite de tamanho especifiado no HTML';
-	$_UP['erros'][3] = 'O upload do arquivo foi feito parcialmente';
-	$_UP['erros'][4] = 'Não foi feito o upload do arquivo';
-	 
+
+$baseurl = '/tdd';
+# $baseurl = '';
+
+$nosecmd = '/bin/nosetests';
+
+/**
+ * Configuration of $datadir (directory where files will be saved to).
+ */
+$datadir = __DIR__ . '/uploads';
+if (! file_exists($datadir)) {
+	$result = mkdir($datadir, 0700, true);
+	if ($result === False) {
+		echo "Cannot create directory to save files: " . $datadir;
+		exit();
+	}
+}
+if (! is_dir($datadir)) {
+	echo "Cannot use directory to save files";
+	exit();
+}
+
+
+/**
+ * Configuration of $maxfilesize (maximum byte size of uploaded file).
+ */
+$maxFileSize= 1024 * 1024 * 2; 
+
+
+/**
+ * Supported file extensions.
+ */
+$allowedFileExtensions = array();
+$allowedFileExtensions[] = 'py';
+
+/**
+ * Error messages regarding file upload.
+ */
+$uploadErrorMessages = array();
+$uploadErrorMessages[0] = 'Não houve erro';
+$uploadErrorMessages[1] = 'O arquivo no upload é maior do que o limite do PHP';
+$uploadErrorMessages[2] = 'O arquivo ultrapassa o limite de tamanho especifiado no HTML';
+$uploadErrorMessages[3] = 'O upload do arquivo foi feito parcialmente';
+$uploadErrorMessages[4] = 'Não foi feito o upload do arquivo';
+
+/**
+ * Blacklisted statements.
+ */
+$blacklist = array();
+$blacklist[] = 'import os';
+$blacklist[] = 'os.';
+$blacklist[] = 'system';
+$blacklist[] = 'os.remove';
+$blacklist[] = 'os.rmdir';
+$blacklist[] = 'subprocess';
+
+?>
+
+ 
+<form method="post" action="index.php" enctype="multipart/form-data">
+	<label>RA do aluno (somente números):</label>
+	<input type="text" name="ra" value="<?php if (isset($_REQUEST['ra'])) {echo $_REQUEST['ra']; } ?>"/> <p />
+	<label>Arquivo:</label>
+	<input type="file" name="arquivo" />
+	<input type="submit" name="submit" value="Enviar" />
+</form>
+
+
+<?php
+if (isset($_REQUEST['submit'])) {
+	// Faz a verificação da extensão do arquivo
+	$envioOk = True;
+
+
+	// Verifica se foi informado um RA válido
+	if (! isset($_REQUEST['ra'])) {
+		echo "RA não foi informado <br />\n";
+		$envioOk = False;
+	}
+	
+	if (! is_numeric($_REQUEST['ra'])) {
+		echo 'RA inválido: ' . $_REQUEST['ra'] . "<br />\n";
+		$envioOk = False;
+	}
+
 	// Verifica se houve algum erro com o upload. Se sim, exibe a mensagem do erro
 	if ($_FILES['arquivo']['error'] != 0) {
-		die("Não foi possível fazer o upload, erro:<br />" . $_UP['erros'][$_FILES['arquivo']['error']]);
-		exit; // Para a execução do script
-	}
+		echo "Não foi possível fazer o upload: " . $uploadErrorMessages[$_FILES['arquivo']['error']] . "<br />\n";
+		$envioOk = False;
+	} else { 
+		$ext = pathinfo($_FILES['arquivo']['name'], PATHINFO_EXTENSION);
+		if (! in_array($ext, $allowedFileExtensions)) {
+			echo "Por favor, apenas envie arquivos com extensao .py. <br />\n";
+			$envioOk = False;
+		}
 	 
-	// Caso script chegue a esse ponto, não houve erro com o upload e o PHP pode continuar
-	 
-	// Faz a verificação da extensão do arquivo
-	$ext = pathinfo($_FILES['arquivo']['name'], PATHINFO_EXTENSION);
+		// Faz a verificação do tamanho do arquivo
+		if ($_FILES['arquivo']['size'] > $maxFileSize) {
+			echo "O arquivo enviado é muito grande, envie arquivos de até 2Mb. <br />\n";
+			$envioOk = False;
+		}
 
-	#$extensao = strtolower(end(explode('.', $_FILES['arquivo']['name'])));
-	#if (array_search($extensao, $_UP['extensoes']) === false) {
-	if ($ext != 'py') {
-		echo "Por favor, apenas envie arquivos com extensao .py";
-	}
-	 
-	// Faz a verificação do tamanho do arquivo
-	else if ($_UP['tamanho'] < $_FILES['arquivo']['size']) {
-		echo "O arquivo enviado é muito grande, envie arquivos de até 2Mb.";
-	}
-	 
-	// O arquivo passou em todas as verificações, hora de tentar movê-lo para a pasta
-	else {
-		if (file_exists ("uploads/".$_POST['ra'])) {
-			$_UP['pasta'] = 'uploads/'.$_POST['ra'].'/';
-		} else {
-			// Se a pasta uploads nao existir ela eh criada
-			if (!file_exists("uploads")) {
-				mkdir("uploads",0777);
-			}
-			// Se a pasta RA nao existir ela eh criada
-			if (mkdir("uploads/".$_POST['ra'], 0777)) {
-				$_UP['pasta'] = 'uploads/'.$_POST['ra'].'/';
-			} else {
-				die("Não foi possível fazer o upload, a pasta do usuario nao pôde ser criada!");
-				exit;
+		$contents = file_get_contents($_FILES['arquivo']['tmp_name']);
+		foreach ($blacklist as $word) {
+			if (strstr($contents, $word) !== False) {
+				echo "O arquivo contém um comando proibido. <br />\n";
+				$envioOk = False;
 			}
 		}
-		
-		$nomec = str_replace(".py","",$_FILES['arquivo']['name']);
-		$nome_final = $nomec.'-'.time().'.py';
-		 
+	}
+
+	
+
+	// Se O arquivo passou em todas as verificações, hora de tentar movê-lo para a pasta
+	if ($envioOk) {
+		$submission['pasta_usuario'] = $datadir . '/' . $_REQUEST['ra'];
+		if (! file_exists($submission['pasta_usuario'])) {
+			mkdir($submission['pasta_usuario'], 0700);
+		}
+
+		$submission['pasta_submission'] = $submission['pasta_usuario'] . '/' . time();
+		if (! file_exists($submission['pasta_submission'])) {
+			mkdir($submission['pasta_submission'], 0700);
+		}
+
+		$submission['arquivo'] = $submission['pasta_submission'] . '/' . $_FILES['arquivo']['name'];
+
+		$submission['resultados_cobertura'] = $submission['pasta_submission'] . '/' . 'cover';
+		if (! file_exists($submission['resultados_cobertura'])) {
+			mkdir($submission['resultados_cobertura'], 0700);
+		}
+
+		$submission['resultados_testes'] = $submission['pasta_submission'] . '/' . 'test.xml';
+
 		// Depois verifica se é possível mover o arquivo para a pasta escolhida
-		if (move_uploaded_file($_FILES['arquivo']['tmp_name'], $_UP['pasta'] . $nome_final)) {
+		if (move_uploaded_file($_FILES['arquivo']['tmp_name'], $submission['arquivo'])) {
 			// Upload efetuado com sucesso, exibe uma mensagem e um link para o arquivo
-			echo "Upload efetuado com sucesso!";
-			echo "<p /> ************************** <p />";
-			echo "Execucao do teste: <p /><p />";
+			echo "<h2>Execução dos casos de teste</h2>\n";
 				
-			$pypath = "nosetests --cover-html-dir=uploads/".$_POST['ra']."/cover/ --cover-html --with-xunit --xunit-file=uploads/".$_POST['ra']."/test.xml --with-coverage --cover-branches ";
+			$comando = $nosecmd;
+			$comando .= ' --with-coverage --cover-branches';
+			$comando .= ' --cover-html --cover-html-dir=' . $submission['resultados_cobertura'];
+			$comando .= ' --with-xunit --xunit-file=' . $submission['resultados_testes'];
+			$comando .= ' ' . $submission['arquivo'];
+			chdir($submission['pasta_submission']);
+			exec($comando, $log_teste);
 
-			$teste = exec("$pypath".$_UP['pasta'].$nome_final,$log_teste);
-
-			$mostra = "$pypath".$_UP['pasta'].$nome_final;
-			
-			//echo shell_exec("ls");
-			//echo "<p/> $mostra <p/>";
-			
-			/*foreach ($log_teste as $line) {
-				echo $line;
-				echo "<br />";
-			}*/
-
-			$xml = simplexml_load_file("uploads/".$_POST['ra']."/test.xml");
+			$xml = simplexml_load_file($submission['resultados_testes']);
 			foreach ($xml->testcase as $testcase) {
-			    echo "<p/><b>".$testcase[name]."</b>";
+			    echo '<b>' . $testcase['name'] . ":</b>";
 			    if (! isset($testcase->failure)) {
-				echo "<br/>Ok";
+				echo "Ok<br />\n";
 			    } else {
+				echo "Erro!\n";
+				echo "<ul>\n";
 				foreach ($testcase->failure as $failure) {
-				    echo "<br/>Erro: $failure[message]";
+				    echo "\t<li>" . $failure['message'] . "</li>\n";
 				}
+				echo "</ul><br />\n";
 			    }
-			    echo "\n";
 			}
 			
-			echo "<p /> ************************** <p />";
-    			echo "<iframe width=95% height=500 frameborder='1' src='uploads/".$_POST['ra']."/cover/index.html'></iframe>";
-			
-			
+			echo "<br />\n";
+			echo "<hr />";
+    			echo '<iframe width="95%" height="500" frameborder="1" src="' . str_replace(__DIR__, "", $baseurl . $submission['resultados_cobertura']) . '/index.html"></iframe>';
+			echo "\n";
+		
 		} else {
 			// Não foi possível fazer o upload, provavelmente a pasta está incorreta
-			echo "Não foi possível enviar o arquivo, tente novamente";
+			echo "<b>Não foi possível enviar o arquivo, tente novamente</b>\n";
 		}
-	 
+ 	} else {
+		// Não foi possível fazer o upload, provavelmente a pasta está incorreta
+                echo "<b>Não foi possível avaliar o trabalho enviado, tente novamente</b>\n";
 	}
 }
 ?>
