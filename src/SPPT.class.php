@@ -1,5 +1,7 @@
 <?php
 
+require(__DIR__ . '/TestCaseResult.class.php');
+
 /**
  * Small Python Program Tester.
  *
@@ -9,7 +11,7 @@ class SPPT
 {
 	private $baseurl = '/tdd';
 
-	private $nosecmd = '/bin/nosetests';
+	private $nosecmd = '/usr/bin/nosetests';
 
 	/**
 	 * Configuration of $datadir (directory where files will be saved to).
@@ -49,7 +51,7 @@ class SPPT
 	/**
 	 * Name of results for software testing.
 	 */
-	const RESULTS_TEST = 'test';
+	const RESULTS_TEST = 'test.xml';
 
 	/**
 	 * Name of results for software testing coverage.
@@ -82,8 +84,12 @@ class SPPT
 		}
 	}
 
+	public function getDatadir() {
+		return $this->datadir;
+	}
 
-	public function extract($submission) {
+
+	public function assess($submission) {
 		$contents = file_get_contents($submission->getFile());
                 foreach ($this->blacklist as $word) {
                         if (strstr($contents, $word) !== False) {
@@ -91,39 +97,39 @@ class SPPT
                         }
                 }
 
+		$assessment = array();
 
-		if ($compiler) {
+
+		if ($this->compiler) {
 		}
 
-		if ($style) {
+		if ($this->style) {
 		}
 
-		if ($test) {
-			$comando = $nosecmd;
+		if ($this->test) {
+			$comando = $this->nosecmd;
        		        $comando .= ' --with-coverage --cover-branches';
-	       	        $comando .= ' --cover-html --cover-html-dir=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST . '/' . SPPT::RESULTS_TEST_COVERAGE;
+	       	        $comando .= ' --cover-html --cover-html-dir=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST_COVERAGE;
 	       	        $comando .= ' --with-xunit --xunit-file=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST;
 	                $comando .= ' ' . $submission->getFile();
 			$cwd = getcwd();
-	                chdir($submission[$submission->getWorkingDir());
-	                exec($comando, $log_teste);
+	                chdir($submission->getWorkingDir());
+	                exec($comando);
 			chdir($cwd);
 
-	                $xml = simplexml_load_file($submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST . '/' . 'test.xml';
+	                $xml = simplexml_load_file($submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST);
 	                foreach ($xml->testcase as $testcase) {
-	                    echo '<b>' . $testcase['name'] . ":</b>";
-	                    if (! isset($testcase->failure)) {
-	                        echo "Ok<br />\n";
-	                    } else {
-	                        echo "Erro!\n";
-	                        echo "<ul>\n";
+				$testStatus = isset($testcase['failure']) ? True : False;  // Test cases should fail if the intend is to find errors :-)
+				$testResult = new TestCaseResult($testcase['name'], $testStatus);
 	                        foreach ($testcase->failure as $failure) {
-	                            echo "\t<li>" . $failure['message'] . "</li>\n";
-	                        }
-	                        echo "</ul><br />\n";
-	                    }
-			}
+					$testResult->addError($failure['message']);
+   				}
+				$assessment[] = $testResult;
+			}	
 		}
+
+		$submission->setAssessment($assessment);
+		return $submission;
 	}
 }
 

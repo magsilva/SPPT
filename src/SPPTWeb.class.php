@@ -38,7 +38,9 @@ class SPPTWeb
 
 	private $baseUrl = NULL;
 
-	private $datadir = NULL;
+	private $baseDir = __DIR__;
+
+	private $uploadDir = 'uploads';
 
 	public function __construct() {
 		$this->setDefaultAllowedFileExtensions();
@@ -65,24 +67,20 @@ class SPPTWeb
 		return $this->baseUrl;
 	}
 
+	public function setBaseDir($baseDir) {
+		$this->baseDir = $baseDir;
+	}
 
-	public function setDatadir($dir = NULL) {
-		if ($dir == NULL) {
-			$dir = __DIR__ . '/uploads';
-		}
+	public function getBaseDir() {
+		return $this->baseDir;
+	}
 
-		if (! file_exists($dir)) {
-			$result = mkdir($dir, 0700, true);
-		        if ($result === False) {
-                		throw new Exception('Cannot create directory to save files: ' . $dir);
-			}
-		}
+	public function setUploadDir($uploadDir) {
+		$this->uploadDir = $uploadDir;
+	}
 
-		if (! is_dir($dir)) {
-		        throw new Exception('Cannot use directory to save files: ' . $dir);
-		}
-
-		$this->datadir = $dir;
+	public function getUploadDir() {
+		return $this->uploadDir;
 	}
 
 
@@ -94,10 +92,6 @@ class SPPTWeb
 	public function processUploadRequest($request, $upload) {
 		if (! isset($request['submit'])) {
 			throw new Exception('Nothing to process');
-		}
-
-		if ($this->datadir == NULL) {
-			throw new Exception('Must set data directory before proceedings');
 		}
 
 		// Verifica se foi informado um RA válido
@@ -115,19 +109,20 @@ class SPPTWeb
 		}
 
 		$ext = pathinfo($upload[SPPTWeb::FILENAME_INPUT]['name'], PATHINFO_EXTENSION);
-		if (! in_array($ext, $allowedFileExtensions)) {
+		if (! in_array($ext, $this->allowedFileExtensions)) {
 			throw new Exception('Forbidden filename extension: ' . $ext);
 		}
 	 
-		if ($upload[SPPTWeb::FILENAME_INPUT]['size'] > $maxFileSize) {
+		if ($upload[SPPTWeb::FILENAME_INPUT]['size'] > $this->maxFileSize) {
 			throw new Exception('The file size is bigger than the maximum acceptable value. Please send a smaller file.');
 		}
-	
-		$submission = new Submission($sppt->getWorkingDir(), $request[SPPTWeb::RA_INPUT]);
-		move_uploaded_file($upload[SPPTWeb::FILENAME_INPUT]['tmp_name'], $submission->getWorkingDir());
-		$submission->setFile($upload[SPPTWeb::FILENAME_INPUT]['name']);
 
-		$result = $sppt->extract($submission);
+		$sppt = new SPPT();
+		$sppt->setDatadir($this->baseDir . '/' . $this->uploadDir);
+		$submission = new Submission($sppt->getDatadir(), $request[SPPTWeb::RA_INPUT]);
+		move_uploaded_file($upload[SPPTWeb::FILENAME_INPUT]['tmp_name'], $submission->getWorkingDir() . '/' . $upload[SPPTWeb::FILENAME_INPUT]['name']);
+		$submission->setFile($upload[SPPTWeb::FILENAME_INPUT]['name']);
+		$result = $sppt->assess($submission);
 
 		return $result;
 	}
