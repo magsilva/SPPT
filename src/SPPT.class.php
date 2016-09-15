@@ -56,7 +56,12 @@ class SPPT
 	/**
 	 * Name of results for software testing coverage.
 	 */
-	const RESULTS_TEST_COVERAGE = 'coverage';
+	const RESULTS_TEST_COVERAGE = 'test-coverage.xml';
+
+	/**
+	 * Name of results for software testing coverage (HTML).
+	 */
+	const RESULTS_TEST_COVERAGE_HTML = 'test-coverage';
 
 
 	private function setDefaultBlacklist() {
@@ -108,17 +113,19 @@ class SPPT
 
 		if ($this->test) {
 			$comando = $this->nosecmd;
+			$comando .= ' -q';
        		        $comando .= ' --with-coverage --cover-branches';
-	       	        $comando .= ' --cover-html --cover-html-dir=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST_COVERAGE;
 	       	        $comando .= ' --with-xunit --xunit-file=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST;
+			$comando .= ' --cover-xml --cover-xml-file=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST_COVERAGE;
+	       	        $comando .= ' --cover-html --cover-html-dir=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST_COVERAGE_HTML;
 	                $comando .= ' ' . $submission->getFile();
 			$cwd = getcwd();
 	                chdir($submission->getWorkingDir());
 	                exec($comando);
 			chdir($cwd);
 
-	                $xml = simplexml_load_file($submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST);
-	                foreach ($xml->testcase as $testcase) {
+	                $testsuite = simplexml_load_file($submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST);
+	                foreach ($testsuite->testcase as $testcase) {
 				$testStatus = isset($testcase['failure']) ? True : False;  // Test cases should fail if the intend is to find errors :-)
 				$testResult = new TestCaseResult($testcase['name'], $testStatus);
 	                        foreach ($testcase->failure as $failure) {
@@ -126,7 +133,12 @@ class SPPT
    				}
 				$assessment[] = $testResult;
 			}	
+
+	                $xml = simplexml_load_file($submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST_COVERAGE);
+			$submission->stmtCoverage = floatval($xml['line-rate']);
+			$submission->branchCoverage = floatval($xml['branch-rate']);
 		}
+
 
 		$submission->setAssessment($assessment);
 		return $submission;

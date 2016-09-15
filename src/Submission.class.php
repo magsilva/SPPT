@@ -8,9 +8,16 @@ class Submission {
 
 	private $assessment;
 
-	public function __construct($workingDir, $ra) {
-		$this->workingDir = $workingDir . '/' . $ra . '/' . time();
-		mkdir($this->workingDir, 0700, TRUE);
+	public $stmtCoverage;
+
+	public $branchCoverage;
+
+	public function __construct($workingDir, $ra, $timestamp = null) {
+		if ($timestamp == null) {
+			$timestamp = time();
+		}
+		$this->workingDir = $workingDir . '/' . $ra . '/' . $timestamp;
+		@mkdir($this->workingDir, 0700, TRUE);
 		$this->results = array();
 	}
 

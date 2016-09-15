@@ -52,7 +52,7 @@
 		echo "<br />\n";
 		echo "<hr />";
 		$baseSubmissionDir = substr($submission->getWorkingDir(), strlen($spptweb->getBaseDir()));
- 		echo '<iframe width="95%" height="500" frameborder="1" src="' . $spptweb->getBaseUrl() .  '/' . $baseSubmissionDir . '/' . SPPT::RESULTS_TEST_COVERAGE . '/index.html"></iframe>';
+ 		echo '<iframe width="95%" height="500" frameborder="1" src="' . $spptweb->getBaseUrl() .  '/' . $baseSubmissionDir . '/' . SPPT::RESULTS_TEST_COVERAGE_HTML . '/index.html"></iframe>';
 		echo "\n";	
 	} catch (Exception $e) {
 		echo "<h2>Erros no envio da atividade</h2>\n";
