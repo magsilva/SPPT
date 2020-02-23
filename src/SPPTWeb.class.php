@@ -40,7 +40,7 @@ class SPPTWeb
 
 	private $baseDir = __DIR__;
 
-	private $uploadDir = 'uploads';
+	private $baseUploadDir = __DIR__ . '/uploads';
 
 	public function __construct() {
 		$this->setDefaultAllowedFileExtensions();
@@ -49,6 +49,8 @@ class SPPTWeb
 
 	private function setDefaultAllowedFileExtensions() {
 		$this->allowedFileExtensions[] = 'py';
+		$this->allowedFileExtensions[] = 'jflap';
+		$this->allowedFileExtensions[] = 'txt';
 	}
 
 	private function setDefaultErrorMessages() {
@@ -75,12 +77,24 @@ class SPPTWeb
 		return $this->baseDir;
 	}
 
-	public function setUploadDir($uploadDir) {
-		$this->uploadDir = $uploadDir;
+	public function setBaseUploadDir($baseUploadDir) {
+		$this->baseUploadDir = $baseUploadDir;
 	}
 
-	public function getUploadDir() {
-		return $this->uploadDir;
+	public function getBaseUploadDir() {
+		return $this->baseUploadDir;
+	}
+
+	/**
+	 * Check if there is something to process from the HTTP request.
+	 *
+	 * @return Boolean True if something was sent in the form, False otherwise.
+	 */
+	public function hasSomethingToProcess($request, $upload) {
+		if (isset($request['submit'])) {
+			return True;
+		}
+		return False;
 	}
 
 
@@ -90,7 +104,7 @@ class SPPTWeb
 	 * @return Array with results.
 	 */
 	public function processUploadRequest($request, $upload) {
-		if (! isset($request['submit'])) {
+		if (! $this->hasSomethingToProcess($request, $upload)) {
 			throw new Exception('Nothing to process');
 		}
 
@@ -118,7 +132,7 @@ class SPPTWeb
 		}
 
 		$sppt = new SPPT();
-		$sppt->setDatadir($this->baseDir . '/' . $this->uploadDir);
+		$sppt->setDatadir($this->baseUploadDir);
 		$submission = new Submission($sppt->getDatadir(), $request[SPPTWeb::RA_INPUT]);
 		move_uploaded_file($upload[SPPTWeb::FILENAME_INPUT]['tmp_name'], $submission->getWorkingDir() . '/' . $upload[SPPTWeb::FILENAME_INPUT]['name']);
 		$submission->setFile($upload[SPPTWeb::FILENAME_INPUT]['name']);

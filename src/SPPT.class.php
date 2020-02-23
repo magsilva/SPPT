@@ -1,77 +1,18 @@
 <?php
 
-require(__DIR__ . '/TestCaseResult.class.php');
+require_once(__DIR__ . '/Assessment.class.php');
 
 /**
- * Small Python Program Tester.
+ * SimPle Program Tester.
  *
  * @author Marco Aurélio Graciotto Silva
  */
 class SPPT
 {
-	private $baseurl = '/tdd';
-
-	private $nosecmd = '/usr/bin/nosetests';
-
 	/**
 	 * Configuration of $datadir (directory where files will be saved to).
 	 */
 	private $datadir;
-
-	/**
-	 * Blacklisted statements.
-	 */
-	private $blacklist = array();
-
-        /**
-         * Enable syntax and semantic verification (compiler).
-         */
-        private $compiler = TRUE;
-
-	/**
-	 * Name of results for compilation.
-	 */
-	const RESULTS_COMPILER = 'compiler';
-
-        /**
-         * Enable style verification (pep8).
-         */
-        private $style = TRUE;
-
-	/**
-	 * Name of results for style verification.
-	 */
-	const RESULTS_STYLE = 'style';
-
-        /**
-         * Enable execution of test cases.
-         */
-        private $test = TRUE;
-
-	/**
-	 * Name of results for software testing.
-	 */
-	const RESULTS_TEST = 'test.xml';
-
-	/**
-	 * Name of results for software testing coverage.
-	 */
-	const RESULTS_TEST_COVERAGE = 'test-coverage.xml';
-
-	/**
-	 * Name of results for software testing coverage (HTML).
-	 */
-	const RESULTS_TEST_COVERAGE_HTML = 'test-coverage';
-
-
-	private function setDefaultBlacklist() {
-		$this->blacklist[] = 'import os';
-		$this->blacklist[] = 'os.';
-		$this->blacklist[] = 'system';
-		$this->blacklist[] = 'os.remove';
-		$this->blacklist[] = 'os.rmdir';
-		$this->blacklist[] = 'subprocess';
-	}
 
 	public function setDatadir($datadir) {
 		if (! file_exists($datadir)) {
@@ -95,53 +36,33 @@ class SPPT
 
 
 	public function assess($submission) {
-		$contents = file_get_contents($submission->getFile());
-                foreach ($this->blacklist as $word) {
-                        if (strstr($contents, $word) !== False) {
-                                throw new Exception('The file has unsafe statements');
-                        }
-                }
-
-		$assessment = array();
-
-
-		if ($this->compiler) {
+		$assessments = array();
+		$availableGraders = array();
+		$validGraders = array();
+		
+		foreach (glob(__DIR__ . '/*Grader.class.php', GLOB_NOSORT) as $filename) {
+			require_once($filename);
+			$basename = pathinfo($filename, PATHINFO_BASENAME);
+			$classname = str_replace('.class.php', '', $basename);
+			$grader = new $classname();
+			$availableGraders[] = $grader;
 		}
 
-		if ($this->style) {
+		foreach ($availableGraders as $grader) {
+			if ($grader->canEvaluate($submission)) {
+				$validGraders[] = $grader;
+			}
+		}
+		if (count($validGraders) == 0) {
+			throw new Exception('Could not provide a grader for this submission');
 		}
 
-		if ($this->test) {
-			$comando = $this->nosecmd;
-			$comando .= ' -q';
-       		        $comando .= ' --with-coverage --cover-branches';
-	       	        $comando .= ' --with-xunit --xunit-file=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST;
-			$comando .= ' --cover-xml --cover-xml-file=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST_COVERAGE;
-	       	        $comando .= ' --cover-html --cover-html-dir=' . $submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST_COVERAGE_HTML;
-	                $comando .= ' ' . $submission->getFile();
-			$cwd = getcwd();
-	                chdir($submission->getWorkingDir());
-	                exec($comando);
-			chdir($cwd);
-
-	                $testsuite = simplexml_load_file($submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST);
-	                foreach ($testsuite->testcase as $testcase) {
-				$testStatus = isset($testcase['failure']) ? True : False;  // Test cases should fail if the intend is to find errors :-)
-				$testResult = new TestCaseResult($testcase['name'], $testStatus);
-	                        foreach ($testcase->failure as $failure) {
-					$testResult->addError($failure['message']);
-   				}
-				$assessment[] = $testResult;
-			}	
-
-	                $xml = simplexml_load_file($submission->getWorkingDir() . '/' . SPPT::RESULTS_TEST_COVERAGE);
-			$submission->stmtCoverage = floatval($xml['line-rate']);
-			$submission->branchCoverage = floatval($xml['branch-rate']);
+		foreach ($validGraders as $grader) {
+			$assessments[$grader->getOutputFormat()] = $grader->evaluate($submission);
 		}
 
-
-		$submission->setAssessment($assessment);
-		return $submission;
+		$submission->setAssessments($assessments);
+		return $assessments;
 	}
 }
 

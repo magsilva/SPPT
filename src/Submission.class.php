@@ -6,11 +6,7 @@ class Submission {
 
 	private $file; // Submitted file
 
-	private $assessment;
-
-	public $stmtCoverage;
-
-	public $branchCoverage;
+	private $assessments;
 
 	public function __construct($workingDir, $ra, $timestamp = null) {
 		if ($timestamp == null) {
@@ -37,12 +33,12 @@ class Submission {
 		return $this->file;
 	}
 
-	public function setAssessment($assessment) {
-		$this->assessment = $assessment;
+	public function setAssessments($assessments) {
+		$this->assessments = $assessments;
 	}
 
-	public function getAssessment() {
-		return $this->assessment;
+	public function getAssessments() {
+		return $this->assessments;
 	}
 
 }

@@ -112,6 +112,6 @@ function dir_has_file($dirname, $filename)
 {
 	$dirname = realpath($dirname);
 	$filename = realpath($filename);
-	return strncmp($dirname, $filename, len($dirname));
+	return strncmp($dirname, $filename, strlen($dirname));
 }
 ?>

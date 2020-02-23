@@ -1,6 +1,6 @@
 <?php
 
-require('ExecutableRunner.class.php');
+require_once('ExecutableRunner.class.php');
 
 $runner = new ExecutableRunner("/tmp");
 $param = array();
