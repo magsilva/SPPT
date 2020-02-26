@@ -49,7 +49,7 @@ class SPPTWeb
 
 	private function setDefaultAllowedFileExtensions() {
 		$this->allowedFileExtensions[] = 'py';
-		$this->allowedFileExtensions[] = 'jflap';
+		$this->allowedFileExtensions[] = 'jff';
 		$this->allowedFileExtensions[] = 'txt';
 	}
 
