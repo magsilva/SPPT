@@ -89,7 +89,6 @@ class Assessment {
 		$this->partialResults[] = $assessment;
 		$this->successes += $assessment->successes;
 		$this->errors += $assessment->errors;
-		$this->errorMessages += $assessment->errorMessages;
 	}
 
 	public function getPartialResults() {

@@ -35,7 +35,7 @@ class SPPT
 	}
 
 
-	public function assess($submission) {
+	public function assess($submission, $assignment) {
 		$assessments = array();
 		$availableGraders = array();
 		$validGraders = array();
@@ -49,7 +49,7 @@ class SPPT
 		}
 
 		foreach ($availableGraders as $grader) {
-			if ($grader->canEvaluate($submission)) {
+			if ($grader->canEvaluate($submission, $assignment)) {
 				$validGraders[] = $grader;
 			}
 		}
@@ -58,7 +58,7 @@ class SPPT
 		}
 
 		foreach ($validGraders as $grader) {
-			$assessments[$grader->getOutputFormat()] = $grader->evaluate($submission);
+			$assessments[$grader->getOutputFormat()] = $grader->evaluate($submission, $assignment);
 		}
 
 		$submission->setAssessments($assessments);

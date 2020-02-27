@@ -16,12 +16,12 @@ interface Grader
 
 	public function getOutputFormat();
 
-	public function canEvaluate($submission);
+	public function canEvaluate($submission, $assignment);
 
 	/**
 	 * Returns Assessment.
 	 */
-	public function evaluate($submission);
+	public function evaluate($submission, $assignment);
 }
 
 ?>

@@ -2,6 +2,8 @@
 
 
 require_once(__DIR__ . '/SPPT.class.php');
+require_once(__DIR__ . '/Assessment.class.php');
+require_once(__DIR__ . '/AssignmentDirectory.class.php');
 require_once(__DIR__ . '/Submission.class.php');
 
 /**
@@ -15,6 +17,16 @@ class SPPTWeb
          * Name of form element that stores student's code.
          */
         const RA_INPUT = 'ra';
+
+	/**
+	 * Name of form element that store the assignment bundle's id.
+	 */
+	const ASSIGNMENT_BUNDLE_INPUT = 'bundle';
+
+	/**
+	 * Name of form element that store the assignment's id.
+	 */
+	const ASSIGNMENT_INPUT = 'assignment';
 
 	/**
          * Name of form element that stores the filename.
@@ -103,7 +115,7 @@ class SPPTWeb
 	 *
 	 * @return Array with results.
 	 */
-	public function processUploadRequest($request, $upload) {
+	public function processUploadRequest($request, $upload, $assignments = NULL) {
 		if (! $this->hasSomethingToProcess($request, $upload)) {
 			throw new Exception('Nothing to process');
 		}
@@ -136,9 +148,29 @@ class SPPTWeb
 		$submission = new Submission($sppt->getDatadir(), $request[SPPTWeb::RA_INPUT]);
 		move_uploaded_file($upload[SPPTWeb::FILENAME_INPUT]['tmp_name'], $submission->getWorkingDir() . '/' . $upload[SPPTWeb::FILENAME_INPUT]['name']);
 		$submission->setFile($upload[SPPTWeb::FILENAME_INPUT]['name']);
-		$result = $sppt->assess($submission);
-
-		return $result;
+		$assessments = array();
+		if ($assignments == NULL) {
+			$assessments[] = $sppt->assess($submission, NULL);
+		} else {
+			foreach ($assignments as $assignment) {
+				$assessments[] = $sppt->assess($submission, $assignment);
+			}
+			/*
+			// TODO: consider merging assessments for assignments with same Id and Output format
+			$assessmentsPerAssignments = array();
+			foreach ($assignments as $assignment) {
+				if (! in_array($assignment->getId(), $assessmentsPerAssignments)) {
+					$assessmentsPerAssignments[$assignment->getId()] = new Assessment($assignment->getId());
+				}
+				$partialResult = $sppt->assess($submission, $assignment);
+				$assessmentsPerAssignments[$assignment->getId()]->addPartialResult($partialResult);
+			}
+			foreach ($assessmentsPerAssignments as $assessment) {
+				$assessments[] = $assessment;
+			}
+			*/
+		}
+		return $assessments;
 	}
 }
 

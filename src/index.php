@@ -1,11 +1,13 @@
 <html>
 
 <?php
-	require_once(__DIR__ . '/SPPTWeb.class.php');
-	$spptweb = new SPPTWeb();
-	$spptweb->setBaseDir(__DIR__);
-	$spptweb->setBaseUrl('/apps/sppt');
-	$spptweb->setBaseUploadDir($spptweb->getBaseDir() . '/upload');
+require_once(__DIR__ . '/SPPTWeb.class.php');
+$spptweb = new SPPTWeb();
+$spptweb->setBaseDir(__DIR__);
+$spptweb->setBaseUrl('/apps/sppt');
+$spptweb->setBaseUploadDir($spptweb->getBaseDir() . '/upload');
+$assignmentDirectory = new AssignmentDirectory();
+$assignmentDirectory->setBaseDir($spptweb->getBaseDir() . '/assignments');
 ?>
 
 <head>
@@ -19,14 +21,49 @@
 <h1>Avaliador de modelos especificados com JFLAP</h1>
 <br />
 
-<form method="post" action="<?php basename(__FILE__); ?>" enctype="multipart/form-data">
+
+<?php
+if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
+	$availableBundles = $assignmentDirectory->getBundles();
+	echo "\n<h2>Tarefas disponíveis</h2>";
+	echo "\n<ul>";
+	foreach ($availableBundles as $bundle) {
+		echo "\n\t<li><a href=\"" . basename(__FILE__) . '?' . SPPTWeb::ASSIGNMENT_BUNDLE_INPUT . '=' . $bundle['id'] . "\">" . $bundle['name'] . "</a></li>";
+	}
+	echo "\n</ul>";
+?>
+
+
+<?php
+} else {
+?>
+
+<form method="post" action="<?php basename(__FILE__) . '?' . SPPTWeb::ASSIGNMENT_BUNDLE_INPUT . '=' . $_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT]; ?>" enctype="multipart/form-data">
 	<p>
-	<label>RA do aluno (somente números):</label>
-	<br /><input type="text" name="<?php echo SPPTWeb::RA_INPUT; ?>" value="<?php if (isset($_REQUEST[SPPTWeb::RA_INPUT])) {echo $_REQUEST[SPPTWeb::RA_INPUT]; } ?>"/>
+	<label for="<?php echo SPPTWeb::RA_INPUT; ?>">RA do aluno (somente números):</label>
+	<br /><input type="text" name="<?php echo SPPTWeb::RA_INPUT; ?>" value="<?php if (isset($_REQUEST[SPPTWeb::RA_INPUT])) {echo $_REQUEST[SPPTWeb::RA_INPUT]; } ?>" />
 	</p>
 
 	<p>
-	<label>Arquivo (.jflap ou .txt):</label>
+	<label for="<?php echo SPPTWeb::ASSIGNMENT_INPUT; ?>">Tarefa:</label>
+	<br />
+	<select name="<?php echo SPPTWeb::ASSIGNMENT_INPUT; ?>">
+<?php
+	$assignments = $assignmentDirectory->getAssignmentsFor($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT]);
+	foreach ($assignments as $assignment) {
+		echo "\n\t<option value=\"" . $assignment->getId() . "\"";
+		if (isset($_REQUEST[SPPTWeb::ASSIGNMENT_INPUT]) && $assignment->getId() == $_REQUEST[SPPTWeb::ASSIGNMENT_INPUT]) {
+			echo " selected";
+		}
+		echo ">" . htmlspecialchars($assignment->getName());
+		echo "</option>";
+	}
+?>
+	</select> 
+	</p>
+
+	<p>
+	<label for="file">Arquivo (.jflap ou .txt):</label>
 	<br />
 	<input type="file" name="<?php echo SPPTWeb::FILENAME_INPUT; ?>" />
 	</p>
@@ -36,47 +73,48 @@
 	</p>
 </form>
 
-
 <?php
 	if ($spptweb->hasSomethingToProcess($_REQUEST, $_FILES)) {
+		$assignments = $assignmentDirectory->getSpecificAssignmentsFor($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT], $_REQUEST[SPPTWeb::ASSIGNMENT_INPUT]);
 		try {
-			$assessmentsBundle = $spptweb->processUploadRequest($_REQUEST, $_FILES);
+			$assessmentsBundles = $spptweb->processUploadRequest($_REQUEST, $_FILES, $assignments);
 			echo "<h2>Execução dos casos de teste</h2>\n";
 			echo "<ul>\n";
-			foreach ($assessmentsBundle as $outputFormat => $assessments) {
-				if ($outputFormat == 'XUnit XML') {
-					echo '<li><b>' . $assessments->getName() . ': </b>';
-					if (count($assessments->getCoverage()) != 0) {
-						echo '<br />Cobertura (conforme o critério)';
-						echo '<ul>';
-						foreach ($assessments->getCoverage() as $criterion => $coverage) {
-							echo "\t\t" . '<li>' . htmlspecialchars($criterion) . ': ' . htmlspecialchars($coverage) . '</li>' . "\n";
-						}
-						echo '</ul>';
-					}
-					if (! $assessments->hasFailed()) {
-						echo "<br />Não foram encontrados erros.\n";
-					} else {
-						echo "<br />Erros encontrados: " . $assessments->getErrors() . "\n";
-						echo "<ul>";
-						foreach ($assessments->getPartialResults() as $assessment) {
-							if ($assessment->hasFailed()) {
-								echo "\t<li>" .  htmlspecialchars($assessment->getName()) . "\n";
-								echo "\t\t<ul>\n";
-								foreach ($assessment->getErrorMessages() as $failure) {
-									echo "\t\t\t<li>" . htmlspecialchars($failure) . '</li>' . "\n";
-								}
-								echo "\t\t</ul>\n";
-								echo "\t</li>\n";
+			foreach ($assessmentsBundles as $assessmentsBundle) {
+				foreach ($assessmentsBundle as $outputFormat => $assessments) {
+					if ($outputFormat == 'XUnit XML') {
+						echo '<li><b>' . $assessments->getName() . ': </b>';
+						if (count($assessments->getCoverage()) != 0) {
+							echo '<br />Cobertura (conforme o critério)';
+							echo '<ul>';
+							foreach ($assessments->getCoverage() as $criterion => $coverage) {
+								echo "\t\t" . '<li>' . htmlspecialchars($criterion) . ': ' . htmlspecialchars($coverage) . '</li>' . "\n";
 							}
+							echo '</ul>';
 						}
-						echo "</ul>\n";
+						if (! $assessments->hasFailed()) {
+							echo "<br />Não foram encontrados erros.\n";
+						} else {
+							echo "<br />Erros encontrados: " . $assessments->getErrors() . "\n";
+							echo "<ul>";
+							foreach ($assessments->getPartialResults() as $assessment) {
+								if ($assessment->hasFailed()) {
+									echo "\t<li>" .  htmlspecialchars($assessment->getName()) . "\n";
+									echo "\t\t<ul>\n";
+									foreach ($assessment->getErrorMessages() as $failure) {
+										echo "\t\t\t<li>" . htmlspecialchars($failure) . '</li>' . "\n";
+									}
+									echo "\t\t</ul>\n";
+									echo "\t</li>\n";
+								}
+							}
+							echo "</ul>\n";
+						}
+						echo "</li>\n";
 					}
-					echo "</li>\n";
 				}
 			}
 			echo "</ul>\n";
-
 			/*
 			echo "<br />\n";
 			echo "<hr />";
@@ -89,6 +127,7 @@
 			echo $e->getMessage();
 		}
 	}
+}
 ?>
 
 </body>

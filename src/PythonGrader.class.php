@@ -82,7 +82,7 @@ class PythonGrader implements Grader
 		return 'XUnit XML';
 	}
 	
-        public function canEvaluate($submission) {
+        public function canEvaluate($submission, $assignment = NULL) {
                 $ext = pathinfo($submission->getFile(), PATHINFO_EXTENSION);
                 if (strcasecmp($ext, 'py') == 0) {
                         return True;
@@ -90,7 +90,7 @@ class PythonGrader implements Grader
                 return False;
         }
 
-	public function evaluate($submission) {
+	public function evaluate($submission, $assignment = NULL) {
 		$contents = file_get_contents($submission->getFile());
                 foreach ($this->blacklist as $word) {
                         if (strstr($contents, $word) !== False) {
