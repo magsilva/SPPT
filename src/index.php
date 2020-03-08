@@ -51,7 +51,7 @@ if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
 <?php
 	$assignments = $assignmentDirectory->getAssignmentsFor($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT]);
 	foreach ($assignments as $assignment) {
-		echo "\n\t<option value=\"" . $assignment->getId() . "\"";
+		echo "\n\t<option value=\"" . htmlspecialchars($assignment->getId()) . "\"" . " title=\"" . htmlspecialchars($assignment->getDescription()) . "\"";
 		if (isset($_REQUEST[SPPTWeb::ASSIGNMENT_INPUT]) && $assignment->getId() == $_REQUEST[SPPTWeb::ASSIGNMENT_INPUT]) {
 			echo " selected";
 		}
@@ -83,7 +83,7 @@ if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
 			foreach ($assessmentsBundles as $assessmentsBundle) {
 				foreach ($assessmentsBundle as $outputFormat => $assessments) {
 					if ($outputFormat == 'XUnit XML') {
-						echo '<li><b>' . $assessments->getName() . '</b>';
+						echo '<li><b>' . htmlspecialchars($assessments->getName()) . '</b>';
 						if (count($assessments->getCoverage()) != 0) {
 							echo '<br />Cobertura (conforme o critério)';
 							echo '<ul>';
@@ -95,7 +95,7 @@ if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
 						if (! $assessments->hasFailed()) {
 							echo "<br />Não foram encontrados erros.\n";
 						} else {
-							echo "<br />Erros encontrados: " . $assessments->getErrors() . "\n";
+							echo "<br />Erros encontrados: " . htmlspecialchars($assessments->getErrors()) . "\n";
 							echo "<ul>";
 							foreach ($assessments->getPartialResults() as $assessment) {
 								if ($assessment->hasFailed()) {
