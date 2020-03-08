@@ -83,7 +83,7 @@ if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
 			foreach ($assessmentsBundles as $assessmentsBundle) {
 				foreach ($assessmentsBundle as $outputFormat => $assessments) {
 					if ($outputFormat == 'XUnit XML') {
-						echo '<li><b>' . $assessments->getName() . ': </b>';
+						echo '<li><b>' . $assessments->getName() . '</b>';
 						if (count($assessments->getCoverage()) != 0) {
 							echo '<br />Cobertura (conforme o critério)';
 							echo '<ul>';
@@ -110,7 +110,7 @@ if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
 							}
 							echo "</ul>\n";
 						}
-						echo "</li>\n";
+						echo "<p></p></li>\n";
 					}
 				}
 			}

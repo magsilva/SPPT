@@ -32,7 +32,7 @@ class CmdlineInputOutputAssignment extends Assignment
 	public function loadData($data) {
 		$this->setInput($data['input']);
 		$this->setOutput($data['output']);
-		$this->setName($this->getName() . '- ' . $this->getInput());
+		$this->setName($this->getName() . '. Palavra para reconhecimento: "' . $this->getInput() . '"');
 	}
 
 	public function getSupportedFeatures() {
