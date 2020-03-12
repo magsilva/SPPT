@@ -20,6 +20,7 @@ class JFlapGrader
 	public function getFeatures() {
 		$features = array();
 		$features[] = 'SoftwareTesting_Driver_CommandLineInputOutput';
+		$features[] = 'SoftwareTesting_Driver_CommandLineInputOutputWithStdout';
 		return $features;
 	}
 
@@ -29,9 +30,11 @@ class JFlapGrader
 
 	public function canEvaluate($submission, $assignment) {
                 $ext = pathinfo($submission->getFile(), PATHINFO_EXTENSION);
-                if (strcasecmp($ext, 'jff') == 0 || strcasecmp($ext, 'txt') == 0) {
-			if (in_array('SoftwareTesting_Driver_CommandLineInputOutput', $assignment->getSupportedFeatures())) {
-				return True;
+		if (strcasecmp($ext, 'jff') == 0 || strcasecmp($ext, 'txt') == 0) {
+			foreach ($this->getFeatures() as $supportedFeature) {
+				if (in_array($supportedFeature, $assignment->getSupportedFeatures())) {
+					return True;
+				}
 			}
 		}
 		return False;
@@ -40,7 +43,10 @@ class JFlapGrader
 	public function evaluate($submission, $assignment) {
 		$assessment = new Assessment($assignment->getName());
 
-		if (in_array('SoftwareTesting_Driver_CommandLineInputOutput', $assignment->getSupportedFeatures())) {
+		if (
+			in_array('SoftwareTesting_Driver_CommandLineInputOutput', $assignment->getSupportedFeatures()) ||
+			in_array('SoftwareTesting_Driver_CommandLineInputOutputWithStdout', $assignment->getSupportedFeatures())
+		) {
 			$comando = 'PYTHONPATH=' . $this->flaRunnerPath;
 			$comando .= ' ' . $this->python3Path;
 			$comando .= ' ' . $this->flaRunnerPath . '/fla/main.py';
@@ -48,11 +54,21 @@ class JFlapGrader
        		        $comando .= ' ' . escapeshellarg($assignment->getInput());
 			$cwd = getcwd();
         	        chdir($submission->getWorkingDir());
-                	exec($comando, $output, $retval);
+			exec($comando, $output, $retval);
 			chdir($cwd);
+			$output = implode(" ", $output);
 
 			if (($retval == 0 && $assignment->getOutput() == True) || ($retval != 0 && $assignment->getOutput() == False)) {
-				$assessment->addSuccess();
+				if (in_array('SoftwareTesting_Driver_CommandLineInputOutputWithStdout', $assignment->getSupportedFeatures())) {
+					if ($output == $assignment->getStdout()) {
+						$assessment->addSuccess();
+					} else {
+						$assessment->addError();
+						$assessment->addErrorMessage($output);
+					}
+				} else {
+					$assessment->addSuccess();
+				}
 			} else {
 				$assessment->addError();
 				$assessment->addErrorMessage($output);
