@@ -20,10 +20,8 @@ class CmdlineInputOutputWithStdoutAssignment extends CmdlineInputOutputAssignmen
 	}
 
 	public function loadData($data) {
-		$this->setInput($data['input']);
-		$this->setOutput($data['output']);
+		parent::loadData($data);
 		$this->setStdout($data['stdout']);
-		$this->setName($this->getName() . '. Palavra para processamento: "' . $this->getInput() . '"');
 	}
 
 	public function getSupportedFeatures() {

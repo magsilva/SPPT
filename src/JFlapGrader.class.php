@@ -63,10 +63,10 @@ class JFlapGrader
 			exec($comando, $output, $retval);
 			chdir($cwd);
 			$output = implode(" ", $output);
-
 			if (($retval == 0 && $assignment->getOutput() == True) || ($retval != 0 && $assignment->getOutput() == False)) {
 				if (in_array('SoftwareTesting_Driver_CommandLineInputOutputWithStdout', $assignment->getSupportedFeatures())) {
-					if ($output == $assignment->getStdout()) {
+					$stdout = implode(" ", $assignment->getStdout());
+					if ($output == $stdout) {
 						$assessment->addSuccess();
 					} else {
 						$assessment->addError();
