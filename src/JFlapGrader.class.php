@@ -50,8 +50,14 @@ class JFlapGrader
 			$comando = 'PYTHONPATH=' . $this->flaRunnerPath;
 			$comando .= ' ' . $this->python3Path;
 			$comando .= ' ' . $this->flaRunnerPath . '/fla/main.py';
-	                $comando .= ' ' . escapeshellarg($submission->getFile());
-       		        $comando .= ' ' . escapeshellarg($assignment->getInput());
+			$comando .= ' ' . escapeshellarg($submission->getFile());
+			if (is_array($assignment->getInput())) {
+				foreach ($assignment->getInput() as $input) {
+					$comando .= ' ' . escapeshellarg($input);
+				}
+			} else {
+	       		        $comando .= ' ' . escapeshellarg($assignment->getInput());
+			}
 			$cwd = getcwd();
         	        chdir($submission->getWorkingDir());
 			exec($comando, $output, $retval);
