@@ -97,6 +97,40 @@ class SPPTWeb
 		return $this->baseUploadDir;
 	}
 
+	public function getBundleId($httpRequest) {
+		if (! isset($httpRequest[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
+			return NULL;
+		}
+		if (! preg_match(SPPT::ID_PATTERN, $httpRequest[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
+			return NULL;
+		}
+
+		return $httpRequest[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT];
+	}
+
+	public function getAssignmentId($httpRequest) {
+		if (! isset($httpRequest[SPPTWeb::ASSIGNMENT_INPUT])) {
+			return NULL;
+		}
+		if (! preg_match(SPPT::ID_PATTERN, $httpRequest[SPPTWeb::ASSIGNMENT_INPUT])) {
+			return NULL;
+		}
+
+		return $httpRequest[SPPTWeb::ASSIGNMENT_INPUT];
+	}
+
+
+	public function getUserId($httpRequest) {
+		if (! isset($httpRequest[SPPTWeb::RA_INPUT])) {
+			return NULL;
+		}
+		if (! preg_match(SPPT::USER_ID_PATTERN, $httpRequest[SPPTWeb::RA_INPUT])) {
+			return NULL;
+		}
+
+		return $httpRequest[SPPTWeb::RA_INPUT];
+	}	
+
 	/**
 	 * Check if there is something to process from the HTTP request.
 	 *
@@ -120,15 +154,6 @@ class SPPTWeb
 			throw new Exception('Nothing to process');
 		}
 
-		// Verifica se foi informado um RA válido
-		if (! isset($request[SPPTWeb::RA_INPUT])) {
-			throw new Exception('Student\'s code has not been informed');
-		}
-	
-		if (! is_numeric($request[SPPTWeb::RA_INPUT])) {
-			throw new Exception('Invalid student\'s code: ' . $request[SPPTWeb::RA_INPUT]);
-		}
-
 		// Verifica se houve algum erro com o upload. Se sim, exibe a mensagem do erro
 		if ($upload[SPPTWeb::FILENAME_INPUT]['error'] != 0) {
 			throw new Exception('Upload failed: ' . $this->uploadErrorMessages[$upload[SPPTWeb::FILENAME_INPUT]['error']]);
@@ -149,7 +174,7 @@ class SPPTWeb
 
 		$sppt = new SPPT();
 		$sppt->setDatadir($this->baseUploadDir . '/' . $assignments[0]->getBundleId() . '/' . $assignments[0]->getId());
-		$submission = new Submission($sppt->getDatadir(), $request[SPPTWeb::RA_INPUT]);
+		$submission = new Submission($sppt->getDatadir(), $this->getUserId($request));
 		move_uploaded_file($upload[SPPTWeb::FILENAME_INPUT]['tmp_name'], $submission->getWorkingDir() . '/' . $upload[SPPTWeb::FILENAME_INPUT]['name']);
 		$submission->setFile($upload[SPPTWeb::FILENAME_INPUT]['name']);
 		$assessments = array();

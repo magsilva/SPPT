@@ -8,6 +8,14 @@ $spptweb->setBaseUrl('/apps/sppt');
 $spptweb->setBaseUploadDir($spptweb->getBaseDir() . '/upload');
 $assignmentDirectory = new AssignmentDirectory();
 $assignmentDirectory->setBaseDir($spptweb->getBaseDir() . '/assignments');
+$bundleId = $spptweb->getBundleId($_REQUEST);
+$availableBundles = $assignmentDirectory->getBundles();
+$userId = $spptweb->getUserId($_REQUEST);
+$assignments = [];
+if ($bundleId != NULL) {
+	$assignments = $assignmentDirectory->getAssignmentsFor($bundleId);
+}
+$assignmentId = $spptweb->getAssignmentId($_REQUEST);
 ?>
 
 <head>
@@ -23,8 +31,7 @@ $assignmentDirectory->setBaseDir($spptweb->getBaseDir() . '/assignments');
 
 
 <?php
-if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
-	$availableBundles = $assignmentDirectory->getBundles();
+if ($bundleId == NULL) {
 	echo "\n<h2>Tarefas disponíveis</h2>";
 	echo "\n<ul>";
 	foreach ($availableBundles as $bundle) {
@@ -38,10 +45,10 @@ if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
 } else {
 ?>
 
-<form method="post" action="<?php basename(__FILE__) . '?' . SPPTWeb::ASSIGNMENT_BUNDLE_INPUT . '=' . $_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT]; ?>" enctype="multipart/form-data">
+<form method="post" action="<?php basename(__FILE__) . '?' . SPPTWeb::ASSIGNMENT_BUNDLE_INPUT . '=' . $bundleId; ?>" enctype="multipart/form-data">
 	<p>
-	<label for="<?php echo SPPTWeb::RA_INPUT; ?>">RA do aluno (somente números):</label>
-	<br /><input type="text" name="<?php echo SPPTWeb::RA_INPUT; ?>" value="<?php if (isset($_REQUEST[SPPTWeb::RA_INPUT])) {echo $_REQUEST[SPPTWeb::RA_INPUT]; } ?>" />
+	<label for="<?php echo SPPTWeb::RA_INPUT; ?>">RA do aluno:</label>
+	<br /><input type="text" name="<?php echo SPPTWeb::RA_INPUT; ?>" value="<?php if ($userId != NULL) {echo $userId; } ?>" />
 	</p>
 
 	<p>
@@ -49,10 +56,9 @@ if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
 	<br />
 	<select name="<?php echo SPPTWeb::ASSIGNMENT_INPUT; ?>">
 <?php
-	$assignments = $assignmentDirectory->getAssignmentsFor($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT]);
 	foreach ($assignments as $assignment) {
 		echo "\n\t<option value=\"" . htmlspecialchars($assignment->getId()) . "\"" . " title=\"" . htmlspecialchars($assignment->getDescription()) . "\"";
-		if (isset($_REQUEST[SPPTWeb::ASSIGNMENT_INPUT]) && $assignment->getId() == $_REQUEST[SPPTWeb::ASSIGNMENT_INPUT]) {
+		if ($assignmentId != NULL && $assignment->getId() == $assignmentId) {
 			echo " selected";
 		}
 		echo ">" . htmlspecialchars($assignment->getName());
@@ -75,7 +81,7 @@ if (! isset($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT])) {
 
 <?php
 	if ($spptweb->hasSomethingToProcess($_REQUEST, $_FILES)) {
-		$assignments = $assignmentDirectory->getSpecificAssignmentsFor($_REQUEST[SPPTWeb::ASSIGNMENT_BUNDLE_INPUT], $_REQUEST[SPPTWeb::ASSIGNMENT_INPUT]);
+		$assignments = $assignmentDirectory->getSpecificAssignmentsFor($bundleId, $assignmentId);
 		if ($assignments != NULL && count($assignments) > 0) {
 			try {
 				$assessmentsBundles = $spptweb->processUploadRequest($_REQUEST, $_FILES, $assignments);

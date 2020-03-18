@@ -14,6 +14,10 @@ class SPPT
 	 */
 	private $datadir;
 
+	public const ID_PATTERN = '/^([a-z0-9-_:])+$/i';
+
+	public const USER_ID_PATTERN = '/^a?[0-9]+$/i';
+
 	public function setDatadir($datadir) {
 		if (! file_exists($datadir)) {
 			$result = mkdir($datadir, 0700, true);
