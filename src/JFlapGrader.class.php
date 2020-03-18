@@ -70,14 +70,16 @@ class JFlapGrader
 						$assessment->addSuccess();
 					} else {
 						$assessment->addError();
-						$assessment->addErrorMessage($output);
+						$assessment->addErrorMessage('Resultado esperado era \"' . $stdout . '\", mas foi \"' . $output . '\"');
 					}
 				} else {
 					$assessment->addSuccess();
 				}
 			} else {
+				$expectedResult = ($assignment->getOutput() ? "aceitar" : "rejeitar");
+				$actualResult = ($retval == 0 ? "aceitar" : "rejeitar");
 				$assessment->addError();
-				$assessment->addErrorMessage($output);
+				$assessment->addErrorMessage('Resultado esperado era ' . $expectedResult . ', mas foi ' . $actualResult);
 			}
 		}
 

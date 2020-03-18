@@ -104,6 +104,9 @@ if ($bundleId == NULL) {
 							} else {
 								echo "<br />Erros encontrados: " . htmlspecialchars($assessments->getErrors()) . "\n";
 								echo "<ul>";
+								foreach ($assessments->getErrorMessages() as $failure) {
+									echo "\t\t\t<li>" . htmlspecialchars($failure) . '</li>' . "\n";
+								}
 								foreach ($assessments->getPartialResults() as $assessment) {
 									if ($assessment->hasFailed()) {
 										echo "\t<li>" .  htmlspecialchars($assessment->getName()) . "\n";
