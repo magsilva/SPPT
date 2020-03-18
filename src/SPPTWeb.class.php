@@ -131,7 +131,7 @@ class SPPTWeb
 
 		// Verifica se houve algum erro com o upload. Se sim, exibe a mensagem do erro
 		if ($upload[SPPTWeb::FILENAME_INPUT]['error'] != 0) {
-			throw new Exception('Upload failed: ' . $this->uploadErrorMessages[$uploadS[SPPTWeb::FILENAME_INPUT]['error']]);
+			throw new Exception('Upload failed: ' . $this->uploadErrorMessages[$upload[SPPTWeb::FILENAME_INPUT]['error']]);
 		}
 
 		$ext = pathinfo($upload[SPPTWeb::FILENAME_INPUT]['name'], PATHINFO_EXTENSION);
@@ -143,33 +143,33 @@ class SPPTWeb
 			throw new Exception('The file size is bigger than the maximum acceptable value. Please send a smaller file.');
 		}
 
+		if ($assignments == NULL || count($assignments) == 0) {
+			throw new Exception('There is no assignment associated with the submission');
+		}
+
 		$sppt = new SPPT();
-		$sppt->setDatadir($this->baseUploadDir);
+		$sppt->setDatadir($this->baseUploadDir . '/' . $assignments[0]->getBundleId() . '/' . $assignments[0]->getId());
 		$submission = new Submission($sppt->getDatadir(), $request[SPPTWeb::RA_INPUT]);
 		move_uploaded_file($upload[SPPTWeb::FILENAME_INPUT]['tmp_name'], $submission->getWorkingDir() . '/' . $upload[SPPTWeb::FILENAME_INPUT]['name']);
 		$submission->setFile($upload[SPPTWeb::FILENAME_INPUT]['name']);
 		$assessments = array();
-		if ($assignments == NULL) {
-			$assessments[] = $sppt->assess($submission, NULL);
-		} else {
-			foreach ($assignments as $assignment) {
-				$assessments[] = $sppt->assess($submission, $assignment);
-			}
-			/*
-			// TODO: consider merging assessments for assignments with same Id and Output format
-			$assessmentsPerAssignments = array();
-			foreach ($assignments as $assignment) {
-				if (! in_array($assignment->getId(), $assessmentsPerAssignments)) {
-					$assessmentsPerAssignments[$assignment->getId()] = new Assessment($assignment->getId());
-				}
-				$partialResult = $sppt->assess($submission, $assignment);
-				$assessmentsPerAssignments[$assignment->getId()]->addPartialResult($partialResult);
-			}
-			foreach ($assessmentsPerAssignments as $assessment) {
-				$assessments[] = $assessment;
-			}
-			*/
+		foreach ($assignments as $assignment) {
+			$assessments[] = $sppt->assess($submission, $assignment);
 		}
+		/*
+		// TODO: consider merging assessments for assignments with same Id and Output format
+		$assessmentsPerAssignments = array();
+		foreach ($assignments as $assignment) {
+			if (! in_array($assignment->getId(), $assessmentsPerAssignments)) {
+				$assessmentsPerAssignments[$assignment->getId()] = new Assessment($assignment->getId());
+			}
+			$partialResult = $sppt->assess($submission, $assignment);
+			$assessmentsPerAssignments[$assignment->getId()]->addPartialResult($partialResult);
+		}
+		foreach ($assessmentsPerAssignments as $assessment) {
+			$assessments[] = $assessment;
+		}
+		*/
 		return $assessments;
 	}
 }

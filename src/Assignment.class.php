@@ -10,6 +10,8 @@ class Assignment
 {
 	protected $id;
 
+	protected $bundleId;
+
 	protected $name;
 
 	protected $description;
@@ -21,6 +23,16 @@ class Assignment
 	public function getId() {
 		return $this->id;
 	}
+
+	public function setBundleId($bundleId) {
+		$this->bundleId = $bundleId;
+	}
+
+	public function getBundleId() {
+		return $this->bundleId;
+	}
+
+
 
 	public function setName($name) {
 		$this->name = $name;

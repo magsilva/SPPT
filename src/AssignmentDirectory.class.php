@@ -39,8 +39,10 @@ class AssignmentDirectory
 			$assignmentData = json_decode($fileContents, True);
 			$assignmentId = pathinfo($filename, PATHINFO_FILENAME);
 			$assignmentData['id'] = $assignmentId;
+			$assignmentData['bundle_id'] = $bundleId;
 			$assignment = new Assignment();
 			$assignment->setId($assignmentData['id']);
+			$assignment->setBundleId($assignmentData['bundle_id']);
 			$assignment->setName($assignmentData['name']);
 			$assignment->setDescription($assignmentData['description']);
 			$assignments[] = $assignment;
@@ -58,6 +60,7 @@ class AssignmentDirectory
 			$currentAssignmentId = pathinfo($filename, PATHINFO_FILENAME);
 			if ($currentAssignmentId == $assignmentId) {
 				$assignmentData['id'] = $assignmentId;
+				$assignmentData['bundle_id'] = $bundleId;
 				foreach ($assignmentData['evaluationData'] as $evaluationData) {
 					$assignmentClassname = $evaluationData['type'] . 'Assignment';
 					if (file_exists(__DIR__ . '/' . $assignmentClassname . '.class.php')) {
@@ -65,6 +68,7 @@ class AssignmentDirectory
 						foreach ($evaluationData['data'] as $singleEvaluationData) {
 							$assignment = new $assignmentClassname();
 							$assignment->setId($assignmentData['id']);
+							$assignment->setBundleId($assignmentData['bundle_id']);
 							$assignment->setName($assignmentData['name']);
 							$assignment->setDescription($assignmentData['description']);
 							$assignment->loadData($singleEvaluationData);
